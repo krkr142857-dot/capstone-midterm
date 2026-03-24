@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>중간시연_고등학교 수학 문제 생성기</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff; --bd:#000000; --tx:#000000; --sub:#333333; --ac:#0055ff;
+}
+body{background:var(--bg);font-family:sans-serif;color:var(--tx);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+header{flex-shrink:0;border-bottom:2px solid var(--bd);padding:0 20px;height:50px;display:flex;align-items:center;justify-content:space-between}
+.logo-tx{font-weight:bold;font-size:16px}
+.hbadge{font-size:12px;border:1px solid var(--bd);padding:2px 8px;}
+.ws{flex:1;display:flex;overflow:hidden}
+aside{width:220px;flex-shrink:0;border-right:2px solid var(--bd);display:flex;flex-direction:column;overflow-y:auto;padding:15px;gap:15px;background:#f9f9f9}
+.fl{font-size:13px;font-weight:bold;margin-bottom:5px;border-bottom:1px solid #ccc;padding-bottom:2px}
+.grade-tabs, .ty-row{display:flex;gap:5px}
+.grade-tab, .ty-btn{flex:1;padding:5px;border:1px solid var(--bd);background:#fff;cursor:pointer;font-size:12px}
+.grade-tab.on, .ty-btn.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.sub-list{display:flex;flex-direction:column;gap:5px}
+.sub-btn{padding:5px;border:1px solid var(--bd);background:#fff;cursor:pointer;font-size:12px;text-align:left}
+.sub-btn.on{background:#e0e8ff;border-color:var(--ac);font-weight:bold}
+.cnt-ctrl{display:flex;align-items:center;gap:10px}
+.cnt-btn{width:30px;height:30px;border:1px solid var(--bd);background:#fff;cursor:pointer;font-weight:bold}
+.cnt-n{font-size:16px;font-weight:bold;min-width:20px;text-align:center}
+#genBtn{width:100%;padding:10px;border:2px solid var(--bd);background:#e0e0e0;font-size:14px;font-weight:bold;cursor:pointer;margin-top:auto}
+#genBtn:hover{background:#d0d0d0}
+.cp{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px}
+.empty-st{margin:auto;text-align:center;color:#666}
+.pcard{border:1px solid var(--bd);padding:15px;position:relative;background:#fff}
+.pcard.sel{border:2px solid var(--ac)}
+.cnum{font-size:12px;font-weight:bold;margin-bottom:10px;background:#eee;display:inline-block;padding:2px 5px;border:1px solid #ccc}
+.card-q{font-size:15px;line-height:1.8;margin-bottom:15px}
+.choices{display:flex;flex-direction:column;gap:5px}
+.cho{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid #ccc;cursor:pointer;background:#fafafa}
+.cho.pk{border-color:var(--ac);background:#eef}
+.cho.dis{pointer-events:none}
+.cho.rok{border-color:green!important;background:#eaffee!important;font-weight:bold}
+.cho.rng{border-color:red!important;background:#ffeaea!important;text-decoration:line-through}
+.ox-btns{display:flex;gap:10px;margin-bottom:10px}
+.ox-choice{flex:1;padding:15px;border:1px solid var(--bd);background:#fafafa;font-size:18px;font-weight:bold;cursor:pointer}
+.ox-choice.pk{border-color:var(--ac);background:#eef}
+.ox-choice.rok{border-color:green!important;background:#eaffee!important}
+.ox-choice.rng{border-color:red!important;background:#ffeaea!important}
+.cfm-btn, .ssub{padding:8px 15px;border:1px solid var(--bd);background:#eee;cursor:pointer;font-weight:bold;margin-top:10px}
+.cfm-btn:disabled, .ssub:disabled{opacity:0.5;cursor:not-allowed}
+.short-wrap{display:flex;gap:10px;align-items:flex-start}
+.sin{flex:1;padding:8px;border:1px solid var(--bd);font-size:14px}
+.sin:disabled{background:#eee}
+.fb{margin-top:10px;padding:10px;border:1px dashed var(--bd);display:none;font-weight:bold}
+.fb.show{display:block}
+.rp{width:350px;flex-shrink:0;border-left:2px solid var(--bd);overflow-y:auto;padding:20px;background:#f9f9f9}
+.rpl{font-size:14px;font-weight:bold;margin-bottom:15px;border-bottom:2px solid var(--bd);padding-bottom:5px}
+details{margin-bottom:10px;border:1px solid #ccc;background:#fff;padding:5px}
+summary{font-weight:bold;cursor:pointer;padding:5px;background:#eee}
+.abox, .sbox{padding:10px;line-height:1.6;font-size:14px;border-top:1px solid #ccc;margin-top:5px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-tx">수학 문제 생성기 (MVP 프로토타입)</div>
+  </div>
+  <div class="hbadge">수학교육과 캡스톤디자인</div>
+</header>
+
+<div class="ws">
+  <aside>
+    <div class="sbl">설정 패널</div>
+    <div>
+      <div class="fl">학년 선택</div>
+      <div class="grade-tabs" id="gradeG">
+        <button class="grade-tab on" data-g="고1">고1</button>
+        <button class="grade-tab" data-g="고2">고2</button>
+        <button class="grade-tab" data-g="고3">고3</button>
+      </div>
+    </div>
+    <div>
+      <div class="fl">단원 선택</div>
+      <div class="sub-list" id="subG"></div>
+    </div>
+    <div>
+      <div class="fl">유형 선택</div>
+      <div class="ty-row" id="tyG">
+        <button class="ty-btn on" data-v="객관식">객관식</button>
+        <button class="ty-btn" data-v="단답형">단답형</button>
+        <button class="ty-btn" data-v="OX형">OX형</button>
+      </div>
+    </div>
+    <div>
+      <div class="fl">문항 수</div>
+      <div class="cnt-ctrl">
+        <button class="cnt-btn" id="cDn">-</button>
+        <div class="cnt-n" id="cDsp">3</div>
+        <button class="cnt-btn" id="cUp">+</button>
+      </div>
+    </div>
+    <button id="genBtn">문제 생성</button>
+  </aside>
+
+  <div class="cp" id="cp">
+    <div class="empty-st">좌측 패널에서 설정을 완료한 후 '문제 생성' 버튼을 클릭하십시오.</div>
+  </div>
+
+  <div class="rp" id="rp">
+    <div class="empty-st">문제를 선택하면 정답 및 풀이를 확인할 수 있습니다.</div>
+  </div>
+</div>
+
+<script>
+function ri(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+function sp(n) { return n === 0 ? '' : (n > 0 ? '+' + n : String(n)); }
+function sm(n) { return n === 0 ? '' : (n > 0 ? '-' + n : '+' + Math.abs(n)); }
+
+const GRADE_UNITS = {
+  "고1": [ {v:"다항식"}, {v:"방정식과 부등식"} ],
+  "고2": [ {v:"지수와 로그"} ],
+  "고3": [ {v:"수열의 극한"} ]
+};
+
+// OX 문제 동적 생성 로직
+const RAND_GENS_OX = {
+  "고1": {
+    "다항식": [
+      () => {
+        const a = ri(1, 5), b = ri(1, 5);
+        const isTrue = Math.random() > 0.5;
+        const s = a + b, p = a * b;
+        const wrongS = s + ri(1, 2);
+        const q = isTrue ? `$(x+${a})(x+${b}) = x^2+${s}x+${p}$이다.` : `$(x+${a})(x+${b}) = x^2+${wrongS}x+${p}$이다.`;
+        return { q: q, ans: isTrue ? "O" : "X", sol: isTrue ? "전개 공식 $(x+a)(x+b) = x^2+(a+b)x+ab$에 의해 참입니다." : `올바른 전개식은 $x^2+${s}x+${p}$입니다.` };
+      },
+      () => {
+        const a = ri(1, 5);
+        const isTrue = Math.random() > 0.5;
+        const q = isTrue ? `$(x+${a})^2 = x^2+${2*a}x+${a*a}$이다.` : `$(x+${a})^2 = x^2+${a*a}$이다.`;
+        return { q: q, ans: isTrue ? "O" : "X", sol: isTrue ? "완전제곱식 전개 공식 $(a+b)^2 = a^2+2ab+b^2$에 의해 참입니다." : `중간항 $${2*a}x$가 누락되었으므로 거짓입니다.` };
+      }
+    ],
+    "방정식과 부등식": [
+      () => {
+        const s = ri(2, 6), p = ri(2, 6);
+        const isTrue = Math.random() > 0.5;
+        const wrongS = s + ri(1, 3) * (Math.random() > 0.5 ? 1 : -1);
+        const q = isTrue ? `이차방정식 $x^2-${s}x+${p}=0$의 두 근의 합은 $${s}$이다.` : `이차방정식 $x^2-${s}x+${p}=0$의 두 근의 합은 $${wrongS}$이다.`;
+        return { q: q, ans: isTrue ? "O" : "X", sol: isTrue ? "근과 계수의 관계에 의해 두 근의 합은 $-\\dfrac{-"+s+"}{1}="+s+"$ 이므로 참입니다." : `근과 계수의 관계에 의해 올바른 두 근의 합은 $${s}$입니다.` };
+      }
+    ]
+  },
+  "고2": {
+    "지수와 로그": [
+      () => {
+        const a = ri(2, 5), b = ri(2, 5);
+        const isTrue = Math.random() > 0.5;
+        const q = isTrue ? `$2^${a} \\times 2^${b} = 2^{${a+b}}$이다.` : `$2^${a} \\times 2^${b} = 2^{${a*b}}$이다.`;
+        return { q: q, ans: isTrue ? "O" : "X", sol: isTrue ? "지수법칙 $a^m \\times a^n = a^{m+n}$에 의해 참입니다." : `지수법칙에 의해 $2^{${a}+${b}}=2^{${a+b}}$가 올바른 계산입니다.` };
+      }
+    ]
+  },
+  "고3": {
+    "수열의 극한": [
+      () => {
+        const c = ri(2, 9);
+        const isTrue = Math.random() > 0.5;
+        const q = isTrue ? `$\\lim_{n\\to\\infty}\\dfrac{${c}}{n}=0$이다.` : `$\\lim_{n\\to\\infty}\\dfrac{${c}}{n}=${c}$이다.`;
+        return { q: q, ans: isTrue ? "O" : "X", sol: isTrue ? "$n$이 무한히 커질 때 분모만 커지므로 0에 수렴합니다." : `극한값은 0입니다.` };
+      }
+    ]
+  }
+};
+
+// 객관식 및 단답형 문제 동적 생성 로직
+const RAND_GENS = {
+  "고1": {
+    "다항식": [
+      () => {
+        const a = ri(1, 5), b = ri(-5, -1);
+        const s = a + b, p = a * b;
+        const ans = `$x^2${sp(s)}x${sp(p)}$`.replace('1x', 'x').replace('+-', '-');
+        return {
+          type: ["객관식", "단답형"],
+          q: `$(x+${a})(x${b})$를 전개하십시오.`,
+          choices: [ans, `$x^2${sp(s+2)}x${sp(p)}$`, `$x^2${sp(s)}x${sp(p+1)}$`, `$x^2${sp(s-1)}x${sp(p)}$`, `$x^2${sp(s)}x${sp(p-2)}$`],
+          ci: 0, ans: ans, sa: ans.replace(/\$/g, ''),
+          sol: `$(x+a)(x+b)=x^2+(a+b)x+ab$ 공식을 이용합니다.\n합: ${s}, 곱: ${p}이므로 ${ans}입니다.`
+        };
+      },
+      () => {
+        const a = ri(2, 5), b = ri(2, 6);
+        const ans = `$${a*2}x^2${sm(a*b)}x$`;
+        return {
+          type: ["객관식", "단답형"],
+          q: `$${a}x(2x-${b})$를 전개하십시오.`,
+          choices: [ans, `$${a*2}x^2${sp(a*b)}x$`, `$${a*2+1}x^2${sm(a*b)}x$`, `$${a*2}x^2${sm(a*b+1)}x$`, `$${a*2+2}x^2${sm(a*b)}x$`],
+          ci: 0, ans: ans, sa: `${a*2}x^2${a*b>=0?'+':''}${-a*b}x`,
+          sol: `분배법칙: $${a}x\\cdot2x-${a}x\\cdot${b}=${a*2}x^2-${a*b}x$`
+        };
+      }
+    ],
+    "방정식과 부등식": [
+      () => {
+        const r1 = ri(1, 5), r2 = ri(1, 5);
+        const s = r1 + r2, p = r1 * r2;
+        return {
+          type: ["객관식", "단답형"],
+          q: `이차방정식 $x^2-${s}x+${p}=0$의 두 근의 합을 구하십시오.`,
+          choices: [`$${s}$`, `$-${s}$`, `$${p}$`, `$-${p}$`, `$${s+1}$`],
+          ci: 0, ans: `$${s}$`, sa: `${s}`,
+          sol: `근과 계수의 관계에 따라 두 근의 합은 $-\\dfrac{-${s}}{1}=${s}$입니다.`
+        };
+      }
+    ]
+  },
+  "고2": {
+    "지수와 로그": [
+      () => {
+        const m = ri(2, 5), n = ri(2, 5);
+        const ans = Math.pow(2, m + n);
+        return {
+          type: ["객관식", "단답형"],
+          q: `$2^${m}\\times2^${n}$의 값을 구하십시오.`,
+          choices: [`$${ans}$`, `$${ans*2}$`, `$${ans/2}$`, `$${Math.pow(2, m*n)}$`, `$${ans+2}$`],
+          ci: 0, ans: `$${ans}$`, sa: `${ans}`,
+          sol: `지수법칙에 의해 $2^${m}\\times2^${n}=2^{${m}+${n}}=2^{${m+n}}=${ans}$입니다.`
+        };
+      }
+    ]
+  },
+  "고3": {
+    "수열의 극한": [
+      () => {
+        const a = ri(2, 6), b = ri(1, 5), c = ri(1, 3);
+        const ansNum = a, ansDen = c;
+        const ansStr = (ansNum % ansDen === 0) ? `$${ansNum/ansDen}$` : `$\\dfrac{${ansNum}}{${ansDen}}$`;
+        return {
+          type: ["객관식", "단답형"],
+          q: `$\\lim_{n\\to\\infty}\\dfrac{${a}n^2+${b}n}{${c}n^2+1}$의 값을 구하십시오.`,
+          choices: [ansStr, `$0$`, `$\\infty$`, `$${b}$`, `$\\dfrac{${b}}{${c}}$`],
+          ci: 0, ans: ansStr, sa: (ansNum % ansDen === 0) ? `${ansNum/ansDen}` : `${ansNum}/${ansDen}`,
+          sol: `분자, 분모를 $n^2$으로 나누면 극한값은 최고차항 계수의 비인 ${ansStr}가 됩니다.`
+        };
+      }
+    ]
+  }
+};
+
+const st = {grade:"고1",sub:"다항식",type:"객관식",cnt:3};
+let problems=[], pst=[], selIdx=-1;
+
+document.querySelectorAll('#gradeG .grade-tab').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#gradeG .grade-tab').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); st.grade=b.dataset.g; buildSubList(b.dataset.g);
+}));
+
+function buildSubList(grade){
+  const units=GRADE_UNITS[grade] || [];
+  const cont=document.getElementById('subG');
+  cont.innerHTML='';
+  units.forEach((u,i)=>{
+    const b=document.createElement('button');
+    b.className='sub-btn'+(i===0?' on':'');
+    b.dataset.v=u.v;
+    b.textContent=u.v;
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('#subG .sub-btn').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); st.sub=u.v;
+    });
+    cont.appendChild(b);
+  });
+  if(units.length > 0) st.sub=units[0].v;
+}
+buildSubList('고1');
+
+document.querySelectorAll('#tyG .ty-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#tyG .ty-btn').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); st.type=b.dataset.v;
+}));
+
+document.getElementById('cDn').addEventListener('click',()=>{
+  if(st.cnt>1){ st.cnt--; document.getElementById('cDsp').textContent=st.cnt; }
+});
+document.getElementById('cUp').addEventListener('click',()=>{
+  if(st.cnt<10){ st.cnt++; document.getElementById('cDsp').textContent=st.cnt; }
+});
+
+function rm(el){
+    if(typeof renderMathInElement==='function'){
+        renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});
+    }
+}
+
+function norm(s){return (s||'').replace(/\$/g,'').replace(/\s+/g,'').toLowerCase();}
+
+function renderRP(idx){
+  const rp=document.getElementById('rp');
+  const {prob}=problems[idx];
+  
+  rp.innerHTML=
+    '<div class="rpl">문항 정보 및 결과</div>' +
+    '<details>' +
+      '<summary>정답 확인</summary>' +
+      '<div class="abox">'+prob.ans+'</div>' +
+    '</details>' +
+    '<details>' +
+      '<summary>풀이 보기</summary>' +
+      '<div class="sbox">'+prob.sol.replace(/\n/g,'<br>')+'</div>' +
+    '</details>';
+  rm(rp);
+}
+
+function doSubmit(idx){
+  const ps=pst[idx]; if(ps.submitted) return;
+  const {prob,sCi}=problems[idx];
+  const card=document.querySelectorAll('.pcard')[idx];
+
+  ps.submitted=true;
+  let ok=false;
+
+  if(st.type==='객관식'){
+    if(ps.picked===-1) return;
+    ok=(ps.picked===sCi);
+    card.querySelectorAll('.cho').forEach((o,i)=>{
+      o.classList.remove('pk'); o.classList.add('dis');
+      if(i===sCi) o.classList.add('rok');
+      else if(i===ps.picked&&!ok) o.classList.add('rng');
+    });
+    card.querySelector('.cfm-btn').disabled=true;
+  } else if(st.type==='OX형'){
+    if(ps.picked===-1) return;
+    const correctIdx=prob.ans==='O'?0:1;
+    ok=(ps.picked===correctIdx);
+    card.querySelectorAll('.ox-choice').forEach((o,i)=>{
+      o.classList.remove('pk');
+      if(i===correctIdx) o.classList.add('rok');
+      else if(i===ps.picked&&!ok) o.classList.add('rng');
+      o.style.pointerEvents='none';
+    });
+    card.querySelector('.cfm-btn').disabled=true;
+  } else {
+    const inp=card.querySelector('.sin');
+    const ut=inp?inp.value.trim():'';
+    ok=(norm(ut) === norm(prob.sa||prob.ans));
+    if(inp) inp.disabled=true;
+    card.querySelector('.ssub').disabled=true;
+  }
+
+  ps.isOk=ok;
+  const fb=card.querySelector('.fb');
+  if(fb){
+    fb.classList.add('show');
+    fb.style.color = ok ? 'green' : 'red';
+    fb.textContent = ok ? '정답입니다.' : '오답입니다.';
+  }
+  
+  if(selIdx===idx) renderRP(idx);
+}
+
+function mkCard(idx){
+  const {prob,sCh}=problems[idx];
+  const card=document.createElement('div');
+  card.className='pcard';
+  
+  let h='<div class="cnum">문제 '+(idx+1)+'</div><div class="card-q">'+prob.q+'</div>';
+
+  if(st.type==='객관식'&&sCh.length){
+    h+='<div class="choices">'+'①②③④⑤'.split('').map((n,i)=>sCh[i]?'<div class="cho" data-i="'+i+'"><span style="font-weight:bold;margin-right:10px">'+n+'</span><span>'+sCh[i]+'</span></div>':'').join('')+'</div><button class="cfm-btn" disabled>제출</button><div class="fb"></div>';
+  } else if(st.type==='OX형'){
+    h+='<div class="ox-btns"><button class="ox-choice" data-i="0">O</button><button class="ox-choice" data-i="1">X</button></div><button class="cfm-btn" disabled>제출</button><div class="fb"></div>';
+  } else if(st.type==='단답형'){
+    h+='<div class="short-wrap"><input class="sin" type="text" placeholder="정답 입력"/><button class="ssub">제출</button></div><div class="fb"></div>';
+  }
+  
+  card.innerHTML=h;
+  card.addEventListener('click',e=>{
+      if(e.target.closest('.cho,.sin,.ssub,.cfm-btn,.ox-choice')) return;
+      selCard(idx);
+  });
+  
+  card.querySelectorAll('.cho').forEach(o=>o.addEventListener('click',e=>{
+    e.stopPropagation(); selCard(idx);
+    if(pst[idx].submitted) return;
+    card.querySelectorAll('.cho').forEach(x=>x.classList.remove('pk'));
+    o.classList.add('pk'); pst[idx].picked=+o.dataset.i;
+    card.querySelector('.cfm-btn').disabled=false;
+  }));
+
+  card.querySelectorAll('.ox-choice').forEach(o=>o.addEventListener('click',e=>{
+    e.stopPropagation(); selCard(idx);
+    if(pst[idx].submitted) return;
+    card.querySelectorAll('.ox-choice').forEach(x=>x.classList.remove('pk'));
+    o.classList.add('pk'); pst[idx].picked=+o.dataset.i;
+    card.querySelector('.cfm-btn').disabled=false;
+  }));
+
+  const cb=card.querySelector('.cfm-btn'); 
+  if(cb) cb.addEventListener('click',e=>{e.stopPropagation(); doSubmit(idx);});
+  
+  const ss=card.querySelector('.ssub'); 
+  if(ss) ss.addEventListener('click',e=>{e.stopPropagation(); doSubmit(idx);});
+  
+  rm(card);
+  return card;
+}
+
+function selCard(idx){
+  selIdx=idx;
+  document.querySelectorAll('.pcard').forEach((c,i)=>c.classList.toggle('sel',i===idx));
+  renderRP(idx);
+}
+
+function shuf(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
+
+function pick(grade,sub,type,n){
+  let result = [];
+  
+  if(type==='OX형'){
+    const gens = (RAND_GENS_OX[grade] && RAND_GENS_OX[grade][sub]) || [];
+    if (!gens.length) return [];
+    
+    for(let i=0; i<n; i++){
+      const genFunc = gens[Math.floor(Math.random() * gens.length)];
+      const p = genFunc();
+      result.push({
+        prob:{q:p.q, ans:p.ans, sa:p.ans, sol:p.sol, type:['OX형']},
+        sCh:['O','X'],
+        sCi:p.ans==='O'?0:1
+      });
+    }
+    return result;
+  }
+
+  const gens = (RAND_GENS[grade] && RAND_GENS[grade][sub]) || [];
+  if (gens.length > 0) {
+    for (let i = 0; i < n; i++) {
+      const genFunc = gens[Math.floor(Math.random() * gens.length)];
+      const p = genFunc();
+      let sCh=[], sCi=-1;
+      if (type === '객관식' && p.choices) {
+        const si = shuf([0, 1, 2, 3, 4].slice(0, p.choices.length));
+        sCh = si.map(j => p.choices[j]);
+        sCi = si.indexOf(p.ci);
+      }
+      result.push({ prob: p, sCh: sCh, sCi: sCi });
+    }
+  }
+  return result;
+}
+
+document.getElementById('genBtn').addEventListener('click',function(){
+  const cp=document.getElementById('cp'), rp=document.getElementById('rp');
+  selIdx=-1;
+  problems=pick(st.grade,st.sub,st.type,st.cnt);
+  pst=problems.map(()=>({picked:-1,submitted:false,isOk:null,userText:''}));
+  
+  cp.innerHTML='';
+  rp.innerHTML='<div class="empty-st">문제를 선택하면 정답 및 풀이를 확인할 수 있습니다.</div>';
+
+  if(!problems.length){
+    cp.innerHTML='<div class="empty-st">해당 단원의 동적 생성 로직이 등록되지 않았습니다.</div>';
+    return;
+  }
+
+  problems.forEach((_,i)=>{
+      const c=mkCard(i);
+      cp.appendChild(c);
+  });
+  
+  selCard(0);
+});
+</script>
+
+</body>
+</html>
