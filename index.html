@@ -34,7 +34,10 @@ aside{width:220px;flex-shrink:0;border-right:2px solid var(--bd);display:flex;fl
 .empty-st{margin:auto;text-align:center;color:#666}
 .pcard{border:1px solid var(--bd);padding:15px;position:relative;background:#fff}
 .pcard.sel{border:2px solid var(--ac)}
-.cnum{font-size:12px;font-weight:bold;margin-bottom:10px;background:#eee;display:inline-block;padding:2px 5px;border:1px solid #ccc}
+.ctop{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.cnum{font-size:12px;font-weight:bold;background:#eee;padding:2px 5px;border:1px solid #ccc}
+.retry-btn{font-size:12px;color:var(--ac);background:#e0e8ff;border:1px solid var(--ac);padding:4px 8px;cursor:pointer;display:none;font-weight:bold;}
+.retry-btn.vis{display:block;}
 .card-q{font-size:15px;line-height:1.8;margin-bottom:15px}
 .choices{display:flex;flex-direction:column;gap:5px}
 .cho{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid #ccc;cursor:pointer;background:#fafafa}
@@ -124,7 +127,28 @@ const GRADE_UNITS = {
   "고3": [ {v:"수열의 극한"} ]
 };
 
-// OX 문제 동적 생성 로직
+const OX_BANK = {
+ "고1":{
+  "다항식":[
+   {q:"$(a+b)^2 = a^2+2ab+b^2$이다.",ans:"O",exp:"전개 공식에 의해 참입니다."},
+   {q:"$(a-b)^2 = a^2-b^2$이다.",ans:"X",exp:"$(a-b)^2 = a^2-2ab+b^2$입니다."}
+  ],
+  "방정식과 부등식":[
+   {q:"이차방정식 판별식 $D>0$이면 서로 다른 두 실근을 가진다.",ans:"O",exp:"판별식 성질에 의해 참입니다."}
+  ]
+ },
+ "고2":{
+  "지수와 로그":[
+   {q:"$a^m \\cdot a^n = a^{m+n}$이다.",ans:"O",exp:"지수 법칙에 의해 참입니다."}
+  ]
+ },
+ "고3":{
+  "수열의 극한":[
+   {q:"$\\lim_{n\\to\\infty}\\dfrac{1}{n}=0$이다.",ans:"O",exp:"$n$이 무한히 커지면 $0$에 수렴합니다."}
+  ]
+ }
+};
+
 const RAND_GENS_OX = {
   "고1": {
     "다항식": [
@@ -135,12 +159,6 @@ const RAND_GENS_OX = {
         const wrongS = s + ri(1, 2);
         const q = isTrue ? `$(x+${a})(x+${b}) = x^2+${s}x+${p}$이다.` : `$(x+${a})(x+${b}) = x^2+${wrongS}x+${p}$이다.`;
         return { q: q, ans: isTrue ? "O" : "X", sol: isTrue ? "전개 공식 $(x+a)(x+b) = x^2+(a+b)x+ab$에 의해 참입니다." : `올바른 전개식은 $x^2+${s}x+${p}$입니다.` };
-      },
-      () => {
-        const a = ri(1, 5);
-        const isTrue = Math.random() > 0.5;
-        const q = isTrue ? `$(x+${a})^2 = x^2+${2*a}x+${a*a}$이다.` : `$(x+${a})^2 = x^2+${a*a}$이다.`;
-        return { q: q, ans: isTrue ? "O" : "X", sol: isTrue ? "완전제곱식 전개 공식 $(a+b)^2 = a^2+2ab+b^2$에 의해 참입니다." : `중간항 $${2*a}x$가 누락되었으므로 거짓입니다.` };
       }
     ],
     "방정식과 부등식": [
@@ -175,7 +193,6 @@ const RAND_GENS_OX = {
   }
 };
 
-// 객관식 및 단답형 문제 동적 생성 로직
 const RAND_GENS = {
   "고1": {
     "다항식": [
@@ -189,17 +206,6 @@ const RAND_GENS = {
           choices: [ans, `$x^2${sp(s+2)}x${sp(p)}$`, `$x^2${sp(s)}x${sp(p+1)}$`, `$x^2${sp(s-1)}x${sp(p)}$`, `$x^2${sp(s)}x${sp(p-2)}$`],
           ci: 0, ans: ans, sa: ans.replace(/\$/g, ''),
           sol: `$(x+a)(x+b)=x^2+(a+b)x+ab$ 공식을 이용합니다.\n합: ${s}, 곱: ${p}이므로 ${ans}입니다.`
-        };
-      },
-      () => {
-        const a = ri(2, 5), b = ri(2, 6);
-        const ans = `$${a*2}x^2${sm(a*b)}x$`;
-        return {
-          type: ["객관식", "단답형"],
-          q: `$${a}x(2x-${b})$를 전개하십시오.`,
-          choices: [ans, `$${a*2}x^2${sp(a*b)}x$`, `$${a*2+1}x^2${sm(a*b)}x$`, `$${a*2}x^2${sm(a*b+1)}x$`, `$${a*2+2}x^2${sm(a*b)}x$`],
-          ci: 0, ans: ans, sa: `${a*2}x^2${a*b>=0?'+':''}${-a*b}x`,
-          sol: `분배법칙: $${a}x\\cdot2x-${a}x\\cdot${b}=${a*2}x^2-${a*b}x$`
         };
       }
     ],
@@ -300,18 +306,36 @@ function norm(s){return (s||'').replace(/\$/g,'').replace(/\s+/g,'').toLowerCase
 function renderRP(idx){
   const rp=document.getElementById('rp');
   const {prob}=problems[idx];
+  const ps=pst[idx];
   
+  if(!ps.submitted){
+    rp.innerHTML='<div class="empty-st">문제를 제출하면 정답 및 풀이를 확인할 수 있습니다.</div>';
+    return;
+  }
+
   rp.innerHTML=
     '<div class="rpl">문항 정보 및 결과</div>' +
-    '<details>' +
+    '<details open>' +
       '<summary>정답 확인</summary>' +
       '<div class="abox">'+prob.ans+'</div>' +
     '</details>' +
-    '<details>' +
+    '<details open>' +
       '<summary>풀이 보기</summary>' +
       '<div class="sbox">'+prob.sol.replace(/\n/g,'<br>')+'</div>' +
     '</details>';
   rm(rp);
+}
+
+function retry(idx){
+  pst[idx] = {picked:-1, submitted:false, isOk:null, userText:''};
+  const cp = document.getElementById('cp');
+  const cards = cp.querySelectorAll('.pcard');
+  const nc = mkCard(idx);
+  cp.replaceChild(nc, cards[idx]);
+  if(selIdx === idx){
+    nc.classList.add('sel');
+    renderRP(idx);
+  }
 }
 
 function doSubmit(idx){
@@ -357,6 +381,9 @@ function doSubmit(idx){
     fb.style.color = ok ? 'green' : 'red';
     fb.textContent = ok ? '정답입니다.' : '오답입니다.';
   }
+
+  const rb=card.querySelector('.retry-btn');
+  if(rb) rb.classList.add('vis');
   
   if(selIdx===idx) renderRP(idx);
 }
@@ -366,7 +393,7 @@ function mkCard(idx){
   const card=document.createElement('div');
   card.className='pcard';
   
-  let h='<div class="cnum">문제 '+(idx+1)+'</div><div class="card-q">'+prob.q+'</div>';
+  let h='<div class="ctop"><div class="cnum">문제 '+(idx+1)+'</div><button class="retry-btn" onclick="event.stopPropagation();retry('+idx+')">↺ 다시 풀기</button></div><div class="card-q">'+prob.q+'</div>';
 
   if(st.type==='객관식'&&sCh.length){
     h+='<div class="choices">'+'①②③④⑤'.split('').map((n,i)=>sCh[i]?'<div class="cho" data-i="'+i+'"><span style="font-weight:bold;margin-right:10px">'+n+'</span><span>'+sCh[i]+'</span></div>':'').join('')+'</div><button class="cfm-btn" disabled>제출</button><div class="fb"></div>';
@@ -378,7 +405,7 @@ function mkCard(idx){
   
   card.innerHTML=h;
   card.addEventListener('click',e=>{
-      if(e.target.closest('.cho,.sin,.ssub,.cfm-btn,.ox-choice')) return;
+      if(e.target.closest('.cho,.sin,.ssub,.cfm-btn,.ox-choice,.retry-btn')) return;
       selCard(idx);
   });
   
