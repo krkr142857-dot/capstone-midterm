@@ -118,8 +118,16 @@ summary{font-weight:bold;cursor:pointer;padding:5px;background:#eee}
 
 <script>
 function ri(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
-function sp(n) { return n === 0 ? '' : (n > 0 ? '+' + n : String(n)); }
-function sm(n) { return n === 0 ? '' : (n > 0 ? '-' + n : '+' + Math.abs(n)); }
+
+// 수식 포맷팅 헬퍼 함수: 계수가 1, -1, 0일 때의 표기 오류 방지
+function fmt(c, v, isFront) {
+  if (c === 0) return '';
+  let sign = c > 0 ? '+' : '-';
+  if (isFront && c > 0) sign = '';
+  let abs = Math.abs(c);
+  let num = (abs === 1 && v !== '') ? '' : abs;
+  return sign + num + v;
+}
 
 const GRADE_UNITS = {
   "고1": [ {v:"다항식"}, {v:"방정식과 부등식"} ],
@@ -157,8 +165,10 @@ const RAND_GENS_OX = {
         const isTrue = Math.random() > 0.5;
         const s = a + b, p = a * b;
         const wrongS = s + ri(1, 2);
-        const q = isTrue ? `$(x+${a})(x+${b}) = x^2+${s}x+${p}$이다.` : `$(x+${a})(x+${b}) = x^2+${wrongS}x+${p}$이다.`;
-        return { q: q, ans: isTrue ? "O" : "X", sol: isTrue ? "전개 공식 $(x+a)(x+b) = x^2+(a+b)x+ab$에 의해 참입니다." : `올바른 전개식은 $x^2+${s}x+${p}$입니다.` };
+        const eqTrue = `$(x+${a})(x+${b}) = ` + fmt(1,'x^2',true) + fmt(s,'x',false) + fmt(p,'',false) + `$`;
+        const eqFalse = `$(x+${a})(x+${b}) = ` + fmt(1,'x^2',true) + fmt(wrongS,'x',false) + fmt(p,'',false) + `$`;
+        const q = isTrue ? `${eqTrue}이다.` : `${eqFalse}이다.`;
+        return { q: q, ans: isTrue ? "O" : "X", sol: isTrue ? "전개 공식 $(x+a)(x+b) = x^2+(a+b)x+ab$에 의해 참입니다." : `올바른 전개식은 ${eqTrue}입니다.` };
       }
     ],
     "방정식과 부등식": [
@@ -166,8 +176,9 @@ const RAND_GENS_OX = {
         const s = ri(2, 6), p = ri(2, 6);
         const isTrue = Math.random() > 0.5;
         const wrongS = s + ri(1, 3) * (Math.random() > 0.5 ? 1 : -1);
-        const q = isTrue ? `이차방정식 $x^2-${s}x+${p}=0$의 두 근의 합은 $${s}$이다.` : `이차방정식 $x^2-${s}x+${p}=0$의 두 근의 합은 $${wrongS}$이다.`;
-        return { q: q, ans: isTrue ? "O" : "X", sol: isTrue ? "근과 계수의 관계에 의해 두 근의 합은 $-\\dfrac{-"+s+"}{1}="+s+"$ 이므로 참입니다." : `근과 계수의 관계에 의해 올바른 두 근의 합은 $${s}$입니다.` };
+        const expr = fmt(1,'x^2',true) + fmt(-s,'x',false) + fmt(p,'',false);
+        const q = isTrue ? `이차방정식 $${expr}=0$의 두 근의 합은 $${s}$이다.` : `이차방정식 $${expr}=0$의 두 근의 합은 $${wrongS}$이다.`;
+        return { q: q, ans: isTrue ? "O" : "X", sol: isTrue ? `근과 계수의 관계에 의해 두 근의 합은 $-\\dfrac{${-s}}{1}=${s}$ 이므로 참입니다.` : `근과 계수의 관계에 의해 올바른 두 근의 합은 $${s}$입니다.` };
       }
     ]
   },
@@ -177,7 +188,7 @@ const RAND_GENS_OX = {
         const a = ri(2, 5), b = ri(2, 5);
         const isTrue = Math.random() > 0.5;
         const q = isTrue ? `$2^${a} \\times 2^${b} = 2^{${a+b}}$이다.` : `$2^${a} \\times 2^${b} = 2^{${a*b}}$이다.`;
-        return { q: q, ans: isTrue ? "O" : "X", sol: isTrue ? "지수법칙 $a^m \\times a^n = a^{m+n}$에 의해 참입니다." : `지수법칙에 의해 $2^{${a}+${b}}=2^{${a+b}}$가 올바른 계산입니다.` };
+        return { q: q, ans: isTrue ? "O" : "X", sol: isTrue ? "지수법칙 $a^m \\times a^n = a^{m+n}$에 의해 참입니다." : `지수법칙에 의해 $2^{${a}}\\times2^{${b}}=2^{${a+b}}$가 올바른 계산입니다.` };
       }
     ]
   },
@@ -199,13 +210,36 @@ const RAND_GENS = {
       () => {
         const a = ri(1, 5), b = ri(-5, -1);
         const s = a + b, p = a * b;
-        const ans = `$x^2${sp(s)}x${sp(p)}$`.replace('1x', 'x').replace('+-', '-');
+        const ans = `$${fmt(1,'x^2',true)}${fmt(s,'x',false)}${fmt(p,'',false)}$`;
         return {
           type: ["객관식", "단답형"],
           q: `$(x+${a})(x${b})$를 전개하십시오.`,
-          choices: [ans, `$x^2${sp(s+2)}x${sp(p)}$`, `$x^2${sp(s)}x${sp(p+1)}$`, `$x^2${sp(s-1)}x${sp(p)}$`, `$x^2${sp(s)}x${sp(p-2)}$`],
+          choices: [
+            ans, 
+            `$${fmt(1,'x^2',true)}${fmt(s+2,'x',false)}${fmt(p,'',false)}$`, 
+            `$${fmt(1,'x^2',true)}${fmt(s,'x',false)}${fmt(p+1,'',false)}$`, 
+            `$${fmt(1,'x^2',true)}${fmt(s-1,'x',false)}${fmt(p,'',false)}$`, 
+            `$${fmt(1,'x^2',true)}${fmt(s,'x',false)}${fmt(p-2,'',false)}$`
+          ],
           ci: 0, ans: ans, sa: ans.replace(/\$/g, ''),
           sol: `$(x+a)(x+b)=x^2+(a+b)x+ab$ 공식을 이용합니다.\n합: ${s}, 곱: ${p}이므로 ${ans}입니다.`
+        };
+      },
+      () => {
+        const a = ri(2, 5), b = ri(2, 6);
+        const ans = `$${fmt(a*2,'x^2',true)}${fmt(-a*b,'x',false)}$`;
+        return {
+          type: ["객관식", "단답형"],
+          q: `$${fmt(a,'x',true)}(2x-${b})$를 전개하십시오.`,
+          choices: [
+            ans, 
+            `$${fmt(a*2,'x^2',true)}${fmt(a*b,'x',false)}$`, 
+            `$${fmt(a*2+1,'x^2',true)}${fmt(-a*b,'x',false)}$`, 
+            `$${fmt(a*2,'x^2',true)}${fmt(-a*b+1,'x',false)}$`, 
+            `$${fmt(a*2+2,'x^2',true)}${fmt(-a*b,'x',false)}$`
+          ],
+          ci: 0, ans: ans, sa: ans.replace(/\$/g, ''),
+          sol: `분배법칙: $${fmt(a,'x',true)}\\cdot2x-${fmt(a,'x',true)}\\cdot${b}=${ans}$`
         };
       }
     ],
@@ -213,12 +247,13 @@ const RAND_GENS = {
       () => {
         const r1 = ri(1, 5), r2 = ri(1, 5);
         const s = r1 + r2, p = r1 * r2;
+        const expr = `$${fmt(1,'x^2',true)}${fmt(-s,'x',false)}${fmt(p,'',false)}=0$`;
         return {
           type: ["객관식", "단답형"],
-          q: `이차방정식 $x^2-${s}x+${p}=0$의 두 근의 합을 구하십시오.`,
+          q: `이차방정식 ${expr}의 두 근의 합을 구하십시오.`,
           choices: [`$${s}$`, `$-${s}$`, `$${p}$`, `$-${p}$`, `$${s+1}$`],
           ci: 0, ans: `$${s}$`, sa: `${s}`,
-          sol: `근과 계수의 관계에 따라 두 근의 합은 $-\\dfrac{-${s}}{1}=${s}$입니다.`
+          sol: `근과 계수의 관계에 따라 두 근의 합은 $-\\dfrac{${-s}}{1}=${s}$입니다.`
         };
       }
     ]
@@ -244,9 +279,11 @@ const RAND_GENS = {
         const a = ri(2, 6), b = ri(1, 5), c = ri(1, 3);
         const ansNum = a, ansDen = c;
         const ansStr = (ansNum % ansDen === 0) ? `$${ansNum/ansDen}$` : `$\\dfrac{${ansNum}}{${ansDen}}$`;
+        const numExpr = fmt(a,'n^2',true) + fmt(b,'n',false);
+        const denExpr = fmt(c,'n^2',true) + '+1';
         return {
           type: ["객관식", "단답형"],
-          q: `$\\lim_{n\\to\\infty}\\dfrac{${a}n^2+${b}n}{${c}n^2+1}$의 값을 구하십시오.`,
+          q: `$\\lim_{n\\to\\infty}\\dfrac{${numExpr}}{${denExpr}}$의 값을 구하십시오.`,
           choices: [ansStr, `$0$`, `$\\infty$`, `$${b}$`, `$\\dfrac{${b}}{${c}}$`],
           ci: 0, ans: ansStr, sa: (ansNum % ansDen === 0) ? `${ansNum/ansDen}` : `${ansNum}/${ansDen}`,
           sol: `분자, 분모를 $n^2$으로 나누면 극한값은 최고차항 계수의 비인 ${ansStr}가 됩니다.`
